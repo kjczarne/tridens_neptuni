@@ -108,9 +108,9 @@ def main(args=None):
     Returns a suggested exit status (0, 1, 2).
     """
     # Set up option parser
-    parser = optparse.OptionParser(usage="pasteurize [options] file|dir ...")
+    parser = optparse.OptionParser(usage="neptunize [options] file|dir ...")
     parser.add_option("-V", "--version", action="store_true",
-                      help="Report the version number of pasteurize")
+                      help="Report the version number of neptunize")
     parser.add_option("-a", "--all-imports", action="store_true",
                       help="Adds all __future__ and future imports to each module")
     parser.add_option("-f", "--fix", action="append", default=[],

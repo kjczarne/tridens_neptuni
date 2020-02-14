@@ -26,6 +26,9 @@ the `libpasteurize` package. I might provide a safer way to handle this in the f
 Naturally, `future` itself is one of the dependencies listed in `setup.py` and many of the functionalities rely on `python-future`
 (this specifically on version 0.18.2).
 
+## How to install?
+Just do `pip install libtridens`. The project is available on pypi.org.
+
 ## Copyright notice
 `python-future` is MIT-licensed. I left in the original LICENSE file, included only info about myself as the fork author.
 If you wish to grab this specific copy and do something to it feel free to submit a pull request. If you fork it,

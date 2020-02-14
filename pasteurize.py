@@ -18,6 +18,6 @@ The software is distributed under an MIT licence. See LICENSE.txt.
 
 import sys
 
-from libpasteurize.main import main
+from tridens_neptuni.main import main
 
 sys.exit(main())

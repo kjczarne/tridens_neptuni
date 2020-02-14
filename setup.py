@@ -12,86 +12,27 @@ try:
 except ImportError:
     from distutils.core import setup
 
-
-if sys.argv[-1] == 'publish':
-    os.system('python setup.py sdist upload')
-    sys.exit()
-
-
-NAME = "future"
-PACKAGES = ["future",
-            "future.builtins",
-            "future.types",
-            "future.standard_library",
-            "future.backports",
-            "future.backports.email",
-            "future.backports.email.mime",
-            "future.backports.html",
-            "future.backports.http",
-            "future.backports.test",
-            "future.backports.urllib",
-            "future.backports.xmlrpc",
-            "future.moves",
-            "future.moves.dbm",
-            "future.moves.html",
-            "future.moves.http",
-            "future.moves.test",
-            "future.moves.tkinter",
-            "future.moves.urllib",
-            "future.moves.xmlrpc",
-            "future.tests",     # for future.tests.base
-            # "future.tests.test_email",
-            "future.utils",
-            "past",
-            "past.builtins",
-            "past.types",
-            "past.utils",
-            "past.translation",
-            "libfuturize",
-            "libfuturize.fixes",
-            "libpasteurize",
-            "libpasteurize.fixes",
-           ]
-
-# PEP 3108 stdlib moves:
-if sys.version_info[:2] < (3, 0):
-    PACKAGES += [
-            "builtins",
-            # "configparser",  # removed in v0.16.0
-            "copyreg",
-            "html",
-            "http",
-            "queue",
-            "reprlib",
-            "socketserver",
-            "tkinter",
-            "winreg",
-            "xmlrpc",
-            "_dummy_thread",
-            "_markupbase",
-            "_thread",
-           ]
+NAME = "libtridens"
 
 PACKAGE_DATA = {'': [
-                     'README.rst',
                      'LICENSE.txt',
-                     'futurize.py',
                      'pasteurize.py',
-                     'check_rst.sh',
-                     'TESTING.txt',
-                    ],
+                     ],
                 'tests': ['*.py'],
                 }
 
-import src.future
-VERSION = src.future.__version__
-DESCRIPTION = "Clean single-source support for Python 3 and 2"
-LONG_DESC = src.future.__doc__
+VERSION = "0.0.1"
+DESCRIPTION = "`future` fork that allows you to compile `ipy`-compatible code"
 AUTHOR = "Ed Schofield"
 AUTHOR_EMAIL = "ed@pythoncharmers.com"
+FORK_AUTHOR = "kjczarne"
 URL="https://python-future.org"
 LICENSE = "MIT"
-KEYWORDS = "future past python3 migration futurize backport six 2to3 modernize pasteurize 3to2"
+KEYWORDS = "pasteurize ironpython ipy"
+PACKAGES = [
+    "libpasteurize",
+    "libpasteurize.fixes"
+]
 CLASSIFIERS = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 2",
@@ -158,19 +99,18 @@ except OSError:
 
 setup(name=NAME,
       version=VERSION,
-      author=AUTHOR,
+      author=AUTHOR + ', forked by: ' + FORK_AUTHOR,
       author_email=AUTHOR_EMAIL,
       url=URL,
       description=DESCRIPTION,
-      long_description=LONG_DESC,
       license=LICENSE,
       keywords=KEYWORDS,
       entry_points={
           'console_scripts': [
-              'futurize = libfuturize.main:main',
-              'pasteurize = libpasteurize.main:main'
+              'neptunize = libpasteurize.main:main'
           ]
       },
+      install_requires=['future'],  # lib2to3 is another req but it's part of the stdlib
       package_dir={'': 'src'},
       packages=PACKAGES,
       package_data=PACKAGE_DATA,

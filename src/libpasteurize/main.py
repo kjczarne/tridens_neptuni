@@ -36,7 +36,7 @@ the code further.)
 
 """
 
-from __future__ import (absolute_import, print_function, unicode_literals)
+from __future__ import (print_function, unicode_literals)
 
 import sys
 import logging
@@ -44,8 +44,62 @@ import optparse
 from lib2to3.main import main, warn, StdoutRefactoringTool
 from lib2to3 import refactor
 
-from future import __version__
-from libpasteurize.fixes import fix_names
+from .fixes import get_fixers
+from . import fixes as fx
+
+__version__ = '0.0.1'
+
+
+exclude = set([  # these either don't work or are turned off by default
+                 'libpasteurize.fixes.fix_bitlength',  
+                 'libpasteurize.fixes.fix_bool',    
+                 'libpasteurize.fixes.fix_bytes',   
+                 'libpasteurize.fixes.fix_classdecorator',  
+                 'libpasteurize.fixes.fix_collections',
+                 'libpasteurize.fixes.fix_dctsetcomp',  
+                 'libpasteurize.fixes.fix_except',   
+                 'libpasteurize.fixes.fix_features',  
+                 'libpasteurize.fixes.fix_funcattrs',
+                 'libpasteurize.fixes.fix_input',
+                 'libpasteurize.fixes.fix_int',
+                 'libpasteurize.fixes.fix_intern',
+                 'libpasteurize.fixes.fix_itertools',
+                 'libpasteurize.fixes.fix_memoryview',
+                 'libpasteurize.fixes.fix_metaclass',  
+                 'libpasteurize.fixes.fix_methodattrs',  
+                 'libpasteurize.fixes.fix_next',   
+                 'libpasteurize.fixes.fix_numliterals',   
+                 'libpasteurize.fixes.fix_open',   
+                 'libpasteurize.fixes.fix_print',  
+                 'libpasteurize.fixes.fix_raise_',   
+                 'libpasteurize.fixes.fix_range',  
+                 'libpasteurize.fixes.fix_reduce',
+                 'libpasteurize.fixes.fix_setliteral',
+                 'libpasteurize.fixes.fix_str',
+                 'libpasteurize.fixes.fix_super',  
+                 'libpasteurize.fixes.fix_unittest',
+                 'libpasteurize.fixes.fix_with',
+                ])
+
+
+def name_handler(fix, avail_fixes):
+    # Infer the full module name for the fixer.
+    # First ensure that no names clash (e.g.
+    # lib2to3.fixes.fix_blah and libtridens.libpasteurize.fixes.fix_blah):
+    found = [f for f in avail_fixes
+                if f.endswith('fix_{0}'.format(fix))]
+    if len(found) > 1:
+        print("Ambiguous fixer name. Choose a fully qualified "
+                "module name instead from these:\n" +
+                "\n".join("  " + myf for myf in found),
+                file=sys.stderr)
+        return None
+    elif len(found) == 0:
+        print("Unknown fixer. Use --list-fixes or -l for a list.",
+                file=sys.stderr)
+        return None
+    else:
+        return found[0]
 
 
 def main(args=None):
@@ -77,14 +131,41 @@ def main(args=None):
                       help="Write back modified files")
     parser.add_option("-n", "--nobackups", action="store_true", default=False,
                       help="Don't write backups for modified files.")
+    parser.add_option("-i", "--install", action="store", type="str")
+    parser.add_option("-u", "--uninstall", action="store", type="str")
 
     # Parse command line arguments
     refactor_stdin = False
     flags = {}
     options, args = parser.parse_args(args)
-    fixer_pkg = 'libpasteurize.fixes'
-    avail_fixes = fix_names
+    fixer_pkg = 'libtridens.libpasteurize.fixes'
     flags["print_function"] = True
+
+    # when installing/uninstalling fixers:
+    if options.install:
+        fx.install_fixer(options.install)
+        return 0
+    elif options.uninstall:
+        fx.uninstall_fixer(options.uninstall)
+        return 0
+
+    # set available fixers as ones that are excluded by default
+    # plus those that are excluded at runtime by the user
+    if options.nofix:
+        for a in options.nofix:
+            # we assume that a full name for fixer would be sth like blah.fix_blahhh_blahhh
+            # and we assume that when there is no dot before the `fix` keyword we are dealing with
+            # a full name
+            if '.fix_' in a:
+                exclude.add(a)
+            else:
+                # otherwise we need to infer the full name from available fixers
+                full_name = name_handler(a, get_fixers(fx, exclude=exclude))
+                if full_name:
+                    exclude.add(full_name)
+    
+    # after the excluded fixers are updated, get the list that will be used:
+    avail_fixes = get_fixers(fx, exclude=exclude)
 
     if not options.write and options.no_diffs:
         warn("not writing files and not printing diffs; that's not very useful")
@@ -114,35 +195,6 @@ def main(args=None):
     level = logging.DEBUG if options.verbose else logging.INFO
     logging.basicConfig(format='%(name)s: %(message)s', level=level)
 
-    unwanted_fixes = set()
-    for fix in options.nofix:
-        if ".fix_" in fix:
-            unwanted_fixes.add(fix)
-        else:
-            # Infer the full module name for the fixer.
-            # First ensure that no names clash (e.g.
-            # lib2to3.fixes.fix_blah and libfuturize.fixes.fix_blah):
-            found = [f for f in avail_fixes
-                     if f.endswith('fix_{0}'.format(fix))]
-            if len(found) > 1:
-                print("Ambiguous fixer name. Choose a fully qualified "
-                      "module name instead from these:\n" +
-                      "\n".join("  " + myf for myf in found),
-                      file=sys.stderr)
-                return 2
-            elif len(found) == 0:
-                print("Unknown fixer. Use --list-fixes or -l for a list.",
-                      file=sys.stderr)
-                return 2
-            unwanted_fixes.add(found[0])
-
-    extra_fixes = set()
-    if options.all_imports:
-        prefix = 'libpasteurize.fixes.'
-        extra_fixes.add(prefix + 'fix_add_all__future__imports')
-        extra_fixes.add(prefix + 'fix_add_future_standard_library_import')
-        extra_fixes.add(prefix + 'fix_add_all_future_builtins')
-
     explicit = set()
     if options.fix:
         all_present = False
@@ -153,33 +205,20 @@ def main(args=None):
                 if ".fix_" in fix:
                     explicit.add(fix)
                 else:
-                    # Infer the full module name for the fixer.
-                    # First ensure that no names clash (e.g.
-                    # lib2to3.fixes.fix_blah and libpasteurize.fixes.fix_blah):
-                    found = [f for f in avail_fixes
-                             if f.endswith('fix_{0}'.format(fix))]
-                    if len(found) > 1:
-                        print("Ambiguous fixer name. Choose a fully qualified "
-                              "module name instead from these:\n" +
-                              "\n".join("  " + myf for myf in found),
-                              file=sys.stderr)
-                        return 2
-                    elif len(found) == 0:
-                        print("Unknown fixer. Use --list-fixes or -l for a list.",
-                              file=sys.stderr)
-                        return 2
-                    explicit.add(found[0])
-        if len(explicit & unwanted_fixes) > 0:
+                    full_name = name_handler(fix, avail_fixes)
+                    if full_name:
+                        explicit.add(full_name)
+        if len(explicit & exclude) > 0:
             print("Conflicting usage: the following fixers have been "
                   "simultaneously requested and disallowed:\n" +
-                  "\n".join("  " + myf for myf in (explicit & unwanted_fixes)),
+                  "\n".join("  " + myf for myf in (explicit & exclude)),
                   file=sys.stderr)
             return 2
         requested = avail_fixes.union(explicit) if all_present else explicit
     else:
         requested = avail_fixes.union(explicit)
 
-    fixer_names = requested | extra_fixes - unwanted_fixes
+    fixer_names = requested
 
     # Initialize the refactoring tool
     rt = StdoutRefactoringTool(sorted(fixer_names), flags, set(),

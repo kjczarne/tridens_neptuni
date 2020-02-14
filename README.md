@@ -17,8 +17,8 @@ but having to port stuff to `IronPython`, I decided to use a parser but some of 
 little fork as a way of fixing shortcomings of `pasteurize` regarding extensibility.
 
 ### Why this weird ugly name?
-*Tridens* -> Latin for *trident* -> like fork (lol) -> big thing made of steel -> steel is like better iron -> IronPython -> Illuminati Confirmed
-*Neptuni* -> Latin for *Neptune's* -> because someone has to hold the fork -> I myself prefer chopsticks
+* *Tridens* -> Latin for *trident* -> like fork (lol) -> big thing made of steel -> steel is like better iron -> IronPython -> Illuminati Confirmed
+* *Neptuni* -> Latin for *Neptune's* -> because someone has to hold the fork -> I myself prefer chopsticks
 
 ## What to look out for?
 Be careful when installing this if you intend to use `pasteurize` along `neptunize`. It might not work because this project modifies
